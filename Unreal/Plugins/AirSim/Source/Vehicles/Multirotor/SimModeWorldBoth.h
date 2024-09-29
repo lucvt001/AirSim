@@ -37,4 +37,4 @@ protected: //overrides
 private:
     typedef ACarPawn TCarPawn;
     typedef AFlyingPawn TFlyingPawn;
-}
+};
