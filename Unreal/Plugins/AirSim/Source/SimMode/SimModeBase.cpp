@@ -8,6 +8,7 @@
 #include "Misc/OutputDeviceNull.h"
 #include "Engine/World.h"
 
+#include <map>
 #include <memory>
 #include "AirBlueprintLib.h"
 #include "common/AirSimSettings.hpp"
@@ -713,6 +714,9 @@ void ASimModeBase::setupVehiclesAndCamera()
 
                     if (vehicle_setting.is_fpv_vehicle)
                         fpv_pawn = spawned_pawn;
+                    
+                    if (getSettings().simmode_name == AirSimSettings::kSimModeTypeBoth)
+		                addPawnToMap(spawned_pawn, vehicle_setting.vehicle_type);
                 }
             }
         }
@@ -864,6 +868,19 @@ void ASimModeBase::drawLidarDebugPoints()
     }
 
     lidar_checks_done_ = true;
+}
+
+void ASimModeBase::addPawnToMap(APawn* pawn, const std::string& vehicle_type) const
+{
+    pawn_to_vehichle_.insert(std::pair<APawn*, const std::string>(pawn, vehicle_type));
+}
+
+std::string ASimModeBase::getVehicleType(APawn* pawn) const
+{
+    std::map<APawn*, std::string>::const_iterator it = pawn_to_vehichle_.find(pawn);
+    if (it != pawn_to_vehichle_.end())
+        return it->second;
+    return nullptr;
 }
 
 // Draw debug-point on main viewport for Distance sensor hit

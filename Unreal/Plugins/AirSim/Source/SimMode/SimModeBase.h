@@ -151,6 +151,8 @@ protected: //optional overrides
     void checkVehicleReady(); //checks if vehicle is available to use
     virtual void updateDebugReport(msr::airlib::StateReporterWrapper& debug_reporter);
     virtual void initializeExternalCameras();
+    void addPawnToMap(APawn* pawn, const std::string& vehicle_type) const;
+    std::string getVehicleType(APawn* pawn) const;
 
 protected: //Utility methods for derived classes
     virtual const AirSimSettings& getSettings() const;
@@ -213,6 +215,7 @@ private:
     bool lidar_checks_done_ = false;
     bool lidar_draw_debug_points_ = false;
     static ASimModeBase* SIMMODE;
+    mutable std::map<APawn*, std::string> pawn_to_vehichle_;
 
 private:
     void setStencilIDs();
