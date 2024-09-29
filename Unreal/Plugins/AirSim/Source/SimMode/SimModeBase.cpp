@@ -196,7 +196,7 @@ void ASimModeBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
     FRecordingThread::killRecording();
     world_sim_api_.reset();
     api_provider_.reset();
-    api_server_.reset();
+    api_servers_.clear();
     global_ned_transform_.reset();
 
     CameraDirector = nullptr;
@@ -313,10 +313,10 @@ void ASimModeBase::setWind(const msr::airlib::Vector3r& wind) const
     throw std::domain_error("setWind not implemented by SimMode");
 }
 
-std::unique_ptr<msr::airlib::ApiServerBase> ASimModeBase::createApiServer() const
+std::vector<std::unique_ptr<msr::airlib::ApiServerBase> > ASimModeBase::createApiServer() const
 {
     //this will be the case when compilation with RPCLIB is disabled or simmode doesn't support APIs
-    return nullptr;
+    return {};
 }
 
 void ASimModeBase::setupClockSpeed()
@@ -539,16 +539,25 @@ void ASimModeBase::startApiServer()
     if (getSettings().enable_rpc) {
 
 #ifdef AIRLIB_NO_RPC
-        api_server_.reset();
+        if (!api_servers_.empty())
+        {
+            for (auto& api_server : api_servers_)
+            {
+                api_server->stop();
+            }
+            api_servers_.clear();
+        }
 #else
-        api_server_ = createApiServer();
+        api_servers_ = createApiServer();
 #endif
 
-        try {
-            api_server_->start(false, spawned_actors_.Num() + 4);
-        }
-        catch (std::exception& ex) {
-            UAirBlueprintLib::LogMessageString("Cannot start RpcLib Server", ex.what(), LogDebugLevel::Failure);
+        for (auto& api_server : api_servers_){
+            try {
+                api_server->start(false, spawned_actors_.Num() + 4);
+            }
+            catch (std::exception& ex) {
+                UAirBlueprintLib::LogMessageString("Cannot start RpcLib Server", ex.what(), LogDebugLevel::Failure);
+            }
         }
     }
     else
@@ -556,14 +565,18 @@ void ASimModeBase::startApiServer()
 }
 void ASimModeBase::stopApiServer()
 {
-    if (api_server_ != nullptr) {
-        api_server_->stop();
-        api_server_.reset(nullptr);
+    if (!api_servers_.empty())
+    {
+        for (auto& api_server : api_servers_)
+        {
+            api_server->stop();
+        }
     }
+    api_servers_.clear();
 }
 bool ASimModeBase::isApiServerStarted()
 {
-    return api_server_ != nullptr;
+    return api_servers_.empty();
 }
 
 void ASimModeBase::updateDebugReport(msr::airlib::StateReporterWrapper& debug_reporter)
